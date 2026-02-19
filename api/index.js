@@ -26,7 +26,7 @@ const orders = [];
 
 // USDC payment config (Base L2)
 const USDC_CONFIG = {
-  address: '0xe5f81CDEb6b20Fa7869f5903563B714e078a5a93', // George's wallet
+  address: '0x8eF8AC4230515E7D8396194ae2afC97b0140D579', // Agent Commerce merchant wallet
   chain: 'base',
   chainId: 8453,
   token: 'USDC',
