@@ -1,0 +1,19 @@
+{
+  "name": "agent-commerce",
+  "version": "0.1.0",
+  "description": "Agent-ready e-commerce with arbitrage fulfillment",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "seed": "node src/seed.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^9.6.0",
+    "cors": "^2.8.6",
+    "dotenv": "^16.6.1",
+    "express": "^4.22.1",
+    "stripe": "^14.25.0"
+  }
+}
