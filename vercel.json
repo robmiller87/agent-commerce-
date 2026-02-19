@@ -11,8 +11,5 @@
       "src": "/(.*)",
       "dest": "api/index.js"
     }
-  ],
-  "env": {
-    "STRIPE_SECRET_KEY": "@stripe_secret_key"
-  }
+  ]
 }
