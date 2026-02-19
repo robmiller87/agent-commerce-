@@ -8,45 +8,114 @@ const app = express();
 // Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-// In-memory products (Vercel serverless can't use SQLite)
+// In-memory products
 const products = [
-  { id: 'bose-qc45', name: 'Bose QuietComfort 45 Headphones', description: 'Wireless noise-cancelling over-ear headphones', amazon_asin: 'B098FKXT8L', amazon_price: 329, our_price: 339, margin_percent: 3.04, category: 'audio', in_stock: 1 },
-  { id: 'airpods-pro-2', name: 'Apple AirPods Pro (2nd Generation)', description: 'Active Noise Cancellation, USB-C charging', amazon_asin: 'B0D1XD1ZV3', amazon_price: 249, our_price: 257, margin_percent: 3.21, category: 'audio', in_stock: 1 },
-  { id: 'sony-wh1000xm5', name: 'Sony WH-1000XM5 Wireless Headphones', description: 'Industry-leading noise cancellation', amazon_asin: 'B09XS7JWHH', amazon_price: 398, our_price: 410, margin_percent: 3.02, category: 'audio', in_stock: 1 },
-  { id: 'logitech-mx-master-3s', name: 'Logitech MX Master 3S Mouse', description: 'Wireless performance mouse', amazon_asin: 'B09HM94VDS', amazon_price: 99.99, our_price: 103, margin_percent: 3.01, category: 'peripherals', in_stock: 1 },
-  { id: 'keychron-q1-pro', name: 'Keychron Q1 Pro Mechanical Keyboard', description: 'Wireless QMK/VIA custom keyboard', amazon_asin: 'B0BW1ZBDX9', amazon_price: 199, our_price: 205, margin_percent: 3.02, category: 'peripherals', in_stock: 1 },
-  { id: 'kindle-paperwhite', name: 'Kindle Paperwhite (16 GB)', description: '6.8" display, adjustable warm light', amazon_asin: 'B09TMN58KL', amazon_price: 149.99, our_price: 155, margin_percent: 3.34, category: 'electronics', in_stock: 1 },
-  { id: 'anker-powerbank', name: 'Anker 737 Power Bank (24,000mAh)', description: '140W output, laptop charging', amazon_asin: 'B09VPHVT2Z', amazon_price: 109.99, our_price: 113, margin_percent: 2.74, category: 'electronics', in_stock: 1 },
-  { id: 'samsung-t7-1tb', name: 'Samsung T7 Portable SSD (1TB)', description: 'USB 3.2, 1050MB/s transfer', amazon_asin: 'B0874XN4D8', amazon_price: 109.99, our_price: 113, margin_percent: 2.74, category: 'storage', in_stock: 1 },
-  { id: 'elgato-stream-deck', name: 'Elgato Stream Deck MK.2', description: '15 LCD keys, customizable', amazon_asin: 'B09738CV2G', amazon_price: 149.99, our_price: 155, margin_percent: 3.34, category: 'peripherals', in_stock: 1 },
-  { id: 'rode-podcaster', name: 'Rode PodMic USB Microphone', description: 'Broadcast-quality dynamic mic', amazon_asin: 'B0BKY6FKLY', amazon_price: 199, our_price: 205, margin_percent: 3.02, category: 'audio', in_stock: 1 }
+  { id: 'bose-qc45', name: 'Bose QuietComfort 45 Headphones', description: 'Wireless noise-cancelling over-ear headphones', amazon_asin: 'B098FKXT8L', amazon_price: 329, our_price: 339, margin_percent: 3.04, category: 'audio', in_stock: 1, image: 'https://m.media-amazon.com/images/I/51Kp6ZXDG8L._AC_SL1500_.jpg' },
+  { id: 'airpods-pro-2', name: 'Apple AirPods Pro 2', description: 'Active Noise Cancellation, USB-C charging', amazon_asin: 'B0D1XD1ZV3', amazon_price: 249, our_price: 257, margin_percent: 3.21, category: 'audio', in_stock: 1, image: 'https://m.media-amazon.com/images/I/61SUj2aKoEL._AC_SL1500_.jpg' },
+  { id: 'sony-wh1000xm5', name: 'Sony WH-1000XM5', description: 'Industry-leading noise cancellation', amazon_asin: 'B09XS7JWHH', amazon_price: 398, our_price: 410, margin_percent: 3.02, category: 'audio', in_stock: 1, image: 'https://m.media-amazon.com/images/I/61vJtKbAssL._AC_SL1500_.jpg' },
+  { id: 'logitech-mx-master-3s', name: 'Logitech MX Master 3S', description: 'Wireless performance mouse', amazon_asin: 'B09HM94VDS', amazon_price: 99.99, our_price: 103, margin_percent: 3.01, category: 'peripherals', in_stock: 1, image: 'https://m.media-amazon.com/images/I/61ni3t1ryQL._AC_SL1500_.jpg' },
+  { id: 'keychron-q1-pro', name: 'Keychron Q1 Pro', description: 'Wireless mechanical keyboard', amazon_asin: 'B0BW1ZBDX9', amazon_price: 199, our_price: 205, margin_percent: 3.02, category: 'peripherals', in_stock: 1, image: 'https://m.media-amazon.com/images/I/71jG6JZ0TrL._AC_SL1500_.jpg' },
+  { id: 'kindle-paperwhite', name: 'Kindle Paperwhite 16GB', description: '6.8" display, adjustable warm light', amazon_asin: 'B09TMN58KL', amazon_price: 149.99, our_price: 155, margin_percent: 3.34, category: 'electronics', in_stock: 1, image: 'https://m.media-amazon.com/images/I/61z6VKBi1rL._AC_SL1000_.jpg' },
+  { id: 'anker-powerbank', name: 'Anker 737 Power Bank', description: '24,000mAh, 140W output', amazon_asin: 'B09VPHVT2Z', amazon_price: 109.99, our_price: 113, margin_percent: 2.74, category: 'electronics', in_stock: 1, image: 'https://m.media-amazon.com/images/I/61kT7VPlTwL._AC_SL1500_.jpg' },
+  { id: 'samsung-t7-1tb', name: 'Samsung T7 SSD 1TB', description: 'Portable, 1050MB/s transfer', amazon_asin: 'B0874XN4D8', amazon_price: 109.99, our_price: 113, margin_percent: 2.74, category: 'storage', in_stock: 1, image: 'https://m.media-amazon.com/images/I/91JY+4s4AGL._AC_SL1500_.jpg' },
+  { id: 'elgato-stream-deck', name: 'Elgato Stream Deck MK.2', description: '15 LCD keys, customizable', amazon_asin: 'B09738CV2G', amazon_price: 149.99, our_price: 155, margin_percent: 3.34, category: 'peripherals', in_stock: 1, image: 'https://m.media-amazon.com/images/I/71dzPMi3yQL._AC_SL1500_.jpg' },
+  { id: 'rode-podmic', name: 'Rode PodMic USB', description: 'Broadcast-quality dynamic mic', amazon_asin: 'B0BKY6FKLY', amazon_price: 199, our_price: 205, margin_percent: 3.02, category: 'audio', in_stock: 1, image: 'https://m.media-amazon.com/images/I/71kFqLTOKaL._AC_SL1500_.jpg' }
 ];
 
-// In-memory orders (would use a real DB in production)
 const orders = [];
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', service: 'agent-commerce', version: '0.1.0' });
-});
+// Landing page HTML
+const landingHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Commerce</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0a0a0a; color: #fff; min-height: 100vh; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+    header { text-align: center; padding: 3rem 0; border-bottom: 1px solid #222; margin-bottom: 2rem; }
+    h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
+    h1 span { color: #00ff88; }
+    .tagline { color: #888; font-size: 1.1rem; }
+    .badge { display: inline-block; background: #00ff8822; color: #00ff88; padding: 0.25rem 0.75rem; border-radius: 1rem; font-size: 0.8rem; margin-top: 1rem; }
+    .products { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
+    .product { background: #111; border-radius: 12px; overflow: hidden; transition: transform 0.2s; }
+    .product:hover { transform: translateY(-4px); }
+    .product img { width: 100%; height: 200px; object-fit: contain; background: #fff; padding: 1rem; }
+    .product-info { padding: 1rem; }
+    .product-name { font-weight: 600; margin-bottom: 0.25rem; }
+    .product-desc { color: #888; font-size: 0.85rem; margin-bottom: 0.75rem; }
+    .product-price { font-size: 1.25rem; color: #00ff88; font-weight: 600; }
+    .product-price small { color: #666; font-weight: 400; font-size: 0.8rem; }
+    .api-section { margin-top: 3rem; padding: 2rem; background: #111; border-radius: 12px; }
+    .api-section h2 { margin-bottom: 1rem; color: #00ff88; }
+    pre { background: #0a0a0a; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem; }
+    code { color: #00ff88; }
+    .footer { text-align: center; padding: 2rem; color: #444; font-size: 0.85rem; margin-top: 2rem; }
+    .footer a { color: #00ff88; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🛒 Agent <span>Commerce</span></h1>
+      <p class="tagline">E-commerce for AI agents. API-first. Pay with card or USDC.</p>
+      <span class="badge">✨ 2-3% markup • Ships via Amazon</span>
+    </header>
+    
+    <div class="products">
+      ${products.map(p => `
+        <div class="product">
+          <img src="${p.image}" alt="${p.name}" />
+          <div class="product-info">
+            <div class="product-name">${p.name}</div>
+            <div class="product-desc">${p.description}</div>
+            <div class="product-price">$${p.our_price} <small>+${p.margin_percent}%</small></div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+    
+    <div class="api-section">
+      <h2>🤖 Agent API</h2>
+      <p style="color:#888;margin-bottom:1rem;">Your agent can browse and checkout programmatically:</p>
+      <pre><code>GET  /api/products          # List all products
+GET  /api/products/:id      # Product details
+POST /api/orders            # Checkout (Stripe or USDC)
+GET  /api/orders/:id        # Order status</code></pre>
+    </div>
+    
+    <div class="footer">
+      Built for the agent economy • <a href="https://github.com/robmiller87/agent-commerce-">GitHub</a>
+    </div>
+  </div>
+</body>
+</html>`;
 
 // Landing page
 app.get('/', (req, res) => {
-  res.json({ 
-    name: 'Agent Commerce API',
-    description: 'Agent-ready e-commerce with 2-3% markup',
-    endpoints: {
-      products: '/api/products',
-      product: '/api/products/:id',
-      checkout: 'POST /api/orders',
-      order_status: '/api/orders/:id'
-    },
-    product_count: products.length
-  });
+  // Check if request wants JSON (agent) or HTML (human)
+  if (req.headers.accept?.includes('application/json')) {
+    return res.json({ 
+      name: 'Agent Commerce API',
+      description: 'Agent-ready e-commerce with 2-3% markup',
+      endpoints: { products: '/api/products', product: '/api/products/:id', checkout: 'POST /api/orders', order_status: '/api/orders/:id' },
+      product_count: products.length
+    });
+  }
+  res.setHeader('Content-Type', 'text/html');
+  res.send(landingHTML);
+});
+
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', service: 'agent-commerce', version: '0.1.0' });
 });
 
 // List all products
@@ -76,7 +145,6 @@ app.post('/api/orders', async (req, res) => {
   const totalCents = Math.round(total * 100);
   
   try {
-    // Create Stripe PaymentIntent
     const paymentIntent = await stripe.paymentIntents.create({
       amount: totalCents,
       currency: 'usd',
@@ -91,38 +159,13 @@ app.post('/api/orders', async (req, res) => {
     }
     
     const orderId = `ord_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
-    const order = {
-      id: orderId,
-      product_id,
-      product_name: product.name,
-      amazon_asin: product.amazon_asin,
-      quantity,
-      total,
-      shipping,
-      stripe_payment_id: paymentIntent.id,
-      agent_id: agent_id || null,
-      status: 'paid',
-      created_at: new Date().toISOString()
-    };
-    
+    const order = { id: orderId, product_id, product_name: product.name, amazon_asin: product.amazon_asin, quantity, total, shipping, stripe_payment_id: paymentIntent.id, agent_id, status: 'paid', created_at: new Date().toISOString() };
     orders.push(order);
     
-    // Log for fulfillment
     console.log(`🛒 NEW ORDER: ${orderId} | ${product.name} | $${total} | Ship to: ${shipping.name}, ${shipping.city}, ${shipping.country}`);
-    console.log(`   Amazon: https://amazon.com/dp/${product.amazon_asin}`);
     
-    res.json({
-      order_id: orderId,
-      status: 'paid',
-      total,
-      currency: 'USD',
-      product: { id: product.id, name: product.name },
-      shipping,
-      estimated_delivery: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      tracking: null
-    });
+    res.json({ order_id: orderId, status: 'paid', total, currency: 'USD', product: { id: product.id, name: product.name }, shipping, estimated_delivery: new Date(Date.now() + 7*24*60*60*1000).toISOString().split('T')[0], tracking: null });
   } catch (err) {
-    console.error('Order error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -134,5 +177,4 @@ app.get('/api/orders/:id', (req, res) => {
   res.json(order);
 });
 
-// Export for Vercel
 export default app;
