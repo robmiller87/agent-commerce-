@@ -24,6 +24,15 @@ const products = [
 
 const orders = [];
 
+// USDC payment config (Base L2)
+const USDC_CONFIG = {
+  address: '0xe5f81CDEb6b20Fa7869f5903563B714e078a5a93', // George's wallet
+  chain: 'base',
+  chainId: 8453,
+  token: 'USDC',
+  tokenContract: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'
+};
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -130,18 +139,68 @@ app.get('/api/products/:id', (req, res) => {
   res.json(product);
 });
 
-// Create order
+// Create order (supports both Stripe card and USDC payments)
 app.post('/api/orders', async (req, res) => {
-  const { product_id, quantity = 1, shipping, payment_method_id, agent_id } = req.body;
+  const { product_id, quantity = 1, shipping, payment_method, payment_method_id, agent_id, tx_hash } = req.body;
   
-  if (!product_id || !shipping || !payment_method_id) {
-    return res.status(400).json({ error: 'Missing required fields: product_id, shipping, payment_method_id' });
+  if (!product_id || !shipping) {
+    return res.status(400).json({ error: 'Missing required fields: product_id, shipping' });
   }
   
   const product = products.find(p => p.id === product_id);
   if (!product) return res.status(404).json({ error: 'Product not found' });
   
   const total = product.our_price * quantity;
+  const orderId = `ord_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+  
+  // USDC Payment Flow
+  if (payment_method === 'usdc_base') {
+    const order = {
+      id: orderId,
+      product_id,
+      product_name: product.name,
+      amazon_asin: product.amazon_asin,
+      quantity,
+      total,
+      shipping,
+      payment_method: 'usdc_base',
+      agent_id: agent_id || null,
+      status: tx_hash ? 'pending_confirmation' : 'awaiting_payment',
+      tx_hash: tx_hash || null,
+      created_at: new Date().toISOString(),
+      expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString() // 1 hour
+    };
+    orders.push(order);
+    
+    console.log(`🛒 USDC ORDER: ${orderId} | ${product.name} | $${total} USDC | Status: ${order.status}`);
+    
+    return res.json({
+      order_id: orderId,
+      status: order.status,
+      total,
+      currency: 'USDC',
+      product: { id: product.id, name: product.name },
+      shipping,
+      payment: {
+        method: 'usdc_base',
+        chain: 'Base',
+        chain_id: 8453,
+        token: 'USDC',
+        token_contract: USDC_CONFIG.tokenContract,
+        recipient: USDC_CONFIG.address,
+        amount: total.toFixed(2),
+        note: `Payment for order ${orderId}`
+      },
+      estimated_delivery: new Date(Date.now() + 7*24*60*60*1000).toISOString().split('T')[0],
+      expires_in_seconds: 3600
+    });
+  }
+  
+  // Stripe Card Payment Flow
+  if (!payment_method_id) {
+    return res.status(400).json({ error: 'Missing payment_method_id for card payment. Use payment_method: "usdc_base" for USDC.' });
+  }
+  
   const totalCents = Math.round(total * 100);
   
   try {
@@ -158,16 +217,46 @@ app.post('/api/orders', async (req, res) => {
       return res.status(400).json({ error: 'Payment failed', status: paymentIntent.status });
     }
     
-    const orderId = `ord_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
-    const order = { id: orderId, product_id, product_name: product.name, amazon_asin: product.amazon_asin, quantity, total, shipping, stripe_payment_id: paymentIntent.id, agent_id, status: 'paid', created_at: new Date().toISOString() };
+    const order = { id: orderId, product_id, product_name: product.name, amazon_asin: product.amazon_asin, quantity, total, shipping, payment_method: 'card', stripe_payment_id: paymentIntent.id, agent_id, status: 'paid', created_at: new Date().toISOString() };
     orders.push(order);
     
-    console.log(`🛒 NEW ORDER: ${orderId} | ${product.name} | $${total} | Ship to: ${shipping.name}, ${shipping.city}, ${shipping.country}`);
+    console.log(`🛒 CARD ORDER: ${orderId} | ${product.name} | $${total} | Ship to: ${shipping.name}, ${shipping.city}, ${shipping.country}`);
     
     res.json({ order_id: orderId, status: 'paid', total, currency: 'USD', product: { id: product.id, name: product.name }, shipping, estimated_delivery: new Date(Date.now() + 7*24*60*60*1000).toISOString().split('T')[0], tracking: null });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// Confirm USDC payment (after sending tx)
+app.post('/api/orders/:id/confirm', async (req, res) => {
+  const { tx_hash } = req.body;
+  const order = orders.find(o => o.id === req.params.id);
+  
+  if (!order) return res.status(404).json({ error: 'Order not found' });
+  if (order.payment_method !== 'usdc_base') return res.status(400).json({ error: 'Order is not a USDC payment' });
+  if (order.status === 'paid') return res.json({ order_id: order.id, status: 'paid', message: 'Already confirmed' });
+  
+  if (!tx_hash) return res.status(400).json({ error: 'Missing tx_hash' });
+  
+  // Update order with tx hash
+  order.tx_hash = tx_hash;
+  order.status = 'pending_confirmation';
+  
+  // For MVP: trust the tx_hash, mark as paid
+  // In production: verify on-chain that tx is confirmed and amount matches
+  order.status = 'paid';
+  order.paid_at = new Date().toISOString();
+  
+  console.log(`✅ USDC CONFIRMED: ${order.id} | tx: ${tx_hash}`);
+  
+  res.json({
+    order_id: order.id,
+    status: 'paid',
+    tx_hash,
+    message: 'Payment confirmed. Order will be fulfilled within 24 hours.',
+    amazon_url: `https://amazon.com/dp/${order.amazon_asin}`
+  });
 });
 
 // Get order status
