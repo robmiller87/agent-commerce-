@@ -19,7 +19,8 @@ const products = [
   { id: 'anker-powerbank', name: 'Anker 737 Power Bank', description: '24,000mAh, 140W output', amazon_asin: 'B09VPHVT2Z', amazon_price: 109.99, our_price: 113, margin_percent: 2.74, category: 'electronics', in_stock: 1, image: 'https://m.media-amazon.com/images/I/61kT7VPlTwL._AC_SL1500_.jpg' },
   { id: 'samsung-t7-1tb', name: 'Samsung T7 SSD 1TB', description: 'Portable, 1050MB/s transfer', amazon_asin: 'B0874XN4D8', amazon_price: 109.99, our_price: 113, margin_percent: 2.74, category: 'storage', in_stock: 1, image: 'https://m.media-amazon.com/images/I/91JY+4s4AGL._AC_SL1500_.jpg' },
   { id: 'elgato-stream-deck', name: 'Elgato Stream Deck MK.2', description: '15 LCD keys, customizable', amazon_asin: 'B09738CV2G', amazon_price: 149.99, our_price: 155, margin_percent: 3.34, category: 'peripherals', in_stock: 1, image: 'https://m.media-amazon.com/images/I/71dzPMi3yQL._AC_SL1500_.jpg' },
-  { id: 'rode-podmic', name: 'Rode PodMic USB', description: 'Broadcast-quality dynamic mic', amazon_asin: 'B0BKY6FKLY', amazon_price: 199, our_price: 205, margin_percent: 3.02, category: 'audio', in_stock: 1, image: 'https://m.media-amazon.com/images/I/71kFqLTOKaL._AC_SL1500_.jpg' }
+  { id: 'rode-podmic', name: 'Rode PodMic USB', description: 'Broadcast-quality dynamic mic', amazon_asin: 'B0BKY6FKLY', amazon_price: 199, our_price: 205, margin_percent: 3.02, category: 'audio', in_stock: 1, image: 'https://m.media-amazon.com/images/I/71kFqLTOKaL._AC_SL1500_.jpg' },
+  { id: 'tecknet-mousepad', name: 'Tecknet Mouse Pad', description: 'Gaming mouse pad - TEST PRODUCT', amazon_asin: 'B0794WBPHK', amazon_price: 9.70, our_price: 10, margin_percent: 3.09, category: 'peripherals', in_stock: 1, image: 'https://m.media-amazon.com/images/I/71a9VZxAJvL._AC_SL1500_.jpg' }
 ];
 
 const orders = [];
